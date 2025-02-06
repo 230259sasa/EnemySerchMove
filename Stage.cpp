@@ -89,12 +89,12 @@ Stage::Stage()
 				else
 					stageData[y][x] = STAGE_OBJ::EMPTY;
 			}
-
+			stageData[y][x] = STAGE_OBJ::WALL;
 		}
 	}
 
 	//ŒŠŒ@‚è
-	//Dig();
+	Dig();
 
 	setStageRects();
 }

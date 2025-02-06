@@ -1,6 +1,7 @@
 #include "Enemy.h"
 #include "./Stage.h"
 #include "globals.h"
+#include "Player.h"
 
 Enemy::Enemy()
     :pos_({ 0,0 }), isAlive_(true)
@@ -46,7 +47,6 @@ bool Enemy::CheckHit(const Rect& me, const Rect& other)
 void Enemy::RightHandMove()
 {
     Point move = { speed_ * dir_.x, speed_ * dir_.y };
-
     Stage* stage = (Stage*)FindGameObject<Stage>();
     //移動先でブロックと衝突しているか
     //右回転させたdir
@@ -58,8 +58,7 @@ void Enemy::RightHandMove()
     lDir.x = dir_.y;
     lDir.y = dir_.x * -1;
     //中心位置
-    Point c = { pos_.x + move.x + CHA_WIDTH / 2,
-                pos_.y + move.y + CHA_HEIGHT / 2 };
+    Point c = { pos_.x + move.x + CHA_WIDTH / 2, pos_.y + move.y + CHA_HEIGHT / 2 };
     Point rc = c;
     //当たり判定をする点を求める
     c.x += (CHA_WIDTH / 2) * dir_.x;
@@ -67,7 +66,6 @@ void Enemy::RightHandMove()
     //STAGE上の位置
     Point p = { c.x / CHA_WIDTH,c.y / CHA_HEIGHT };
     Point rp = { rc.x / CHA_WIDTH,rc.y / CHA_HEIGHT };
-
     if (abs(rDir.x) > abs(rDir.y)) {
         rp.x += rDir.x;
         rp.y -= rDir.y;
@@ -76,7 +74,6 @@ void Enemy::RightHandMove()
         rp.x -= rDir.x;
         rp.y += rDir.y;
     }
-
     //衝突していたら右にdir_を回す。moveの移動量調節
     if (stage->GetStageData(p.x, p.y) == STAGE_OBJ::WALL) {
         moveVal_ = 0;
@@ -143,6 +140,91 @@ void Enemy::RandomMove()
     int cy = (pos_.y / (CHA_HEIGHT)) % 2;
     if (prgssx == 0 && prgssy == 0 && cx && cy)
     {
-        forward_ = (DIR)(GetRand(3));
+        //forward_ = (DIR)(GetRand(3));
+        CloseMove();
+    }
+}
+
+void Enemy::XCloseMove()
+{
+    Player* player = (Player*)FindGameObject<Player>();
+    if (player == nullptr)
+        return;
+
+    if (rand() % 4 == 0) {
+        if(rand()%2==0)
+            forward_ = DIR::DOWN;
+        else
+            forward_ = DIR::UP;
+        return;
+    }
+
+    if (player->GetPos().x > pos_.x) {
+        forward_ = DIR::RIGHT;
+    }
+    else {
+        forward_ = DIR::LEFT;
+    }
+}
+
+void Enemy::YCloseMove()
+{
+    Player* player = (Player*)FindGameObject<Player>();
+    if (player == nullptr)
+        return;
+
+    if (rand() % 4 == 0) {
+        if (rand() % 2 == 0)
+            forward_ = DIR::LEFT;
+        else
+            forward_ = DIR::RIGHT;
+        return;
+    }
+
+    if (player->GetPos().y > pos_.y) {
+        forward_ = DIR::DOWN;
+    }
+    else {
+        forward_ = DIR::UP;
+    }
+}
+
+void Enemy::CloseMove()
+{
+    Player* player = (Player*)FindGameObject<Player>();
+    if (player == nullptr)
+        return;
+
+    int ranNum = rand() % 3;
+
+    if (ranNum == 0) {
+        int dir = rand() % DIR::MAXDIR;
+        switch (dir) {
+        case DIR::UP:forward_ = DIR::UP; break;
+        case DIR::DOWN:forward_ = DIR::DOWN; break;
+        case DIR::LEFT:forward_ = DIR::LEFT; break;
+        case DIR::RIGHT:forward_ = DIR::RIGHT; break;
+        }
+        return;
+    }
+    else if (ranNum == 1) {
+        float xdis = player->GetPos().x - pos_.x;
+        float ydis = player->GetPos().y - pos_.y;
+        if (abs(xdis) > abs(ydis)) {
+            if (player->GetPos().x > pos_.x) {
+                forward_ = DIR::RIGHT;
+            }
+            else {
+                forward_ = DIR::LEFT;
+            }
+        }
+        else {
+            if (player->GetPos().y > pos_.y) {
+                forward_ = DIR::DOWN;
+            }
+            else {
+                forward_ = DIR::UP;
+            }
+        }
     }
 }

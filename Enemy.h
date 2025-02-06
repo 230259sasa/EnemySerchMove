@@ -22,5 +22,8 @@ public:
 private:
     void RightHandMove();
     void RandomMove();
+    void XCloseMove();
+    void YCloseMove(); 
+    void CloseMove();
 };
 
