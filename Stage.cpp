@@ -96,6 +96,27 @@ Stage::Stage()
 	//ŒŠŒ@‚è
 	Dig();
 
+	//ƒ‹[ƒvì¬
+	for (int y = 0; y < STAGE_HEIGHT; y++)
+	{
+		for (int x = 0; x < STAGE_WIDTH; x++)
+		{
+			if (x + 1 < STAGE_WIDTH && x - 1 > 0 && y -1 > 0 && y + 1 < STAGE_HEIGHT) {
+				if ((stageData[y][x - 1] == STAGE_OBJ::EMPTY && stageData[y][x + 1] == STAGE_OBJ::EMPTY &&
+					stageData[y - 1][x] == STAGE_OBJ::WALL && stageData[y + 1][x] == STAGE_OBJ::WALL) ||
+					(stageData[y][x - 1] == STAGE_OBJ::WALL && stageData[y][x + 1] == STAGE_OBJ::WALL &&
+						stageData[y - 1][x] == STAGE_OBJ::EMPTY && stageData[y + 1][x] == STAGE_OBJ::EMPTY)) {
+					int r = rand() % 5;
+					if (r == 0) {
+						stageData[y][x] = STAGE_OBJ::EMPTY;
+					}
+				}
+			}
+
+		}
+	}
+
+
 	setStageRects();
 }
 

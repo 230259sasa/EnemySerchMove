@@ -25,6 +25,7 @@ Enemy::~Enemy()
 void Enemy::Update()
 {
     RandomMove();
+    //RightHandMove();
 }
 
 void Enemy::Draw()
@@ -227,4 +228,89 @@ void Enemy::CloseMove()
             }
         }
     }
+}
+
+void Enemy::BFSMove()
+{
+    Player* player = (Player*)FindGameObject<Player>();
+    if (player == nullptr)
+        return;
+    Stage* stage = (Stage*)FindGameObject<Stage>();
+    if (stage == nullptr)
+        return;
+
+
+    int sNum = 0;
+    int qSize = queue.size();
+    int qCount = 0;
+    std::vector<std::vector<int>> smap;
+    for (int y = 0; y < STAGE_HEIGHT; y++) {
+        std::vector<int> m;
+        for (int x = 0; x < STAGE_WIDTH; x++) {
+            m.push_back(-1);
+        }
+        smap.push_back(m);
+    }
+    std::vector<Point> route;
+    route.clear();
+    Point goal = { player->GetPos().x % CHA_WIDTH,player->GetPos().y % CHA_HEIGHT };
+    while (!queue.empty()) {
+        Point pos = queue.front();
+        smap[pos.y][pos.x] = sNum;
+        //goal
+        if (goal.x == pos.x && goal.y == pos.y) {
+            break;
+        }
+        if (qCount % qSize == 0) {
+            sNum++;
+            qCount = 0;
+        }
+        queue.pop();
+        if (pos.y - 1 > 0) {
+            Point p = pos;
+            p.y -= 1;
+            if (stage->GetStageData(p.x,p.y) != STAGE_OBJ::WALL && (smap[p.y][p.x] > sNum || smap[p.y][p.x] < 0)) {
+                queue.push(p);
+            }
+        }
+        if (pos.y + 1 < STAGE_HEIGHT) {
+            Point p = pos;
+            p.y += 1;
+            if (stage->GetStageData(p.x, p.y) != STAGE_OBJ::WALL && (smap[p.y][p.x] > sNum || smap[p.y][p.x] < 0)) {
+                queue.push(p);
+            }
+        }
+        if (pos.x - 1 > 0) {
+            Point p = pos;
+            p.x -= 1;
+            if (stage->GetStageData(p.x, p.y) != STAGE_OBJ::WALL && (smap[p.y][p.x] > sNum || smap[p.y][p.x] < 0)) {
+                queue.push(p);
+            }
+        }
+        if (pos.x + 1 < STAGE_WIDTH) {
+            Point p = pos;
+            p.x += 1;
+            if (stage->GetStageData(p.x, p.y) != STAGE_OBJ::WALL && (smap[p.y][p.x] > sNum || smap[p.y][p.x] < 0)) {
+                queue.push(p);
+            }
+        }
+
+        if (qCount % qSize == 0)
+            qSize = queue.size();
+
+        qCount++;
+    }
+    //route
+    Point nPos = goal;
+    while (true) {
+        //route‚Énpos‚ð“ü‚ê‚é
+        route.push_back(nPos);
+        //ã‰º¶‰E‚ÅŽ©•ª‚æ‚è1¬‚³‚¢”‚ð’T‚·
+        if()
+        //‚»‚±‚ÖˆÚ“® npos‚É‚»‚ÌÀ•W‚ð“ü‚ê‚é
+        //goal‚È‚ç‚¨‚í‚è
+        //‚È‚­‚Ä‚à‚¨‚í‚è
+        //
+    }
+    //route‚Ì”z—ñ”½“]
 }
