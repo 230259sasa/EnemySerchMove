@@ -104,6 +104,7 @@ void Player::Update()
 void Player::Draw()
 {
 	DrawBox(pos_.x, pos_.y, pos_.x + CHA_WIDTH, pos_.y + CHA_HEIGHT, GetColor(255, 10, 10), TRUE);
+	DrawFormatString(0, 20, GetColor(0, 0, 0), "%d.%d", pos_.x/CHA_WIDTH,pos_.y/CHA_HEIGHT);
 }
 
 bool Player::CheckHit(const Rect& me, const Rect& other)

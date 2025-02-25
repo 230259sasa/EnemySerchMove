@@ -15,6 +15,9 @@ class Enemy :
     DIR forward_;
 
     std::queue<Point> queue;
+    std::vector<Point> route_;
+    int routeCount_;
+    float timer_;
 public:
     Enemy();
     ~Enemy();
@@ -28,6 +31,7 @@ private:
     void XCloseMove();
     void YCloseMove(); 
     void CloseMove();
-    void BFSMove();
+    void BFS();
+    void RouteMove();
 };
 

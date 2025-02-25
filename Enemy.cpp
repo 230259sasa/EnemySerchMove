@@ -3,8 +3,14 @@
 #include "globals.h"
 #include "Player.h"
 
+bool operator == (Point p1, Point p2) {
+    if (p1.x == p2.x && p1.y == p2.y)
+        return true;
+    return false;
+}
+
 Enemy::Enemy()
-    :pos_({ 0,0 }), isAlive_(true)
+    :pos_({ 0,0 }), isAlive_(true),timer_(0.0f)
 {
     int rx = GetRand(STAGE_WIDTH * CHA_WIDTH);
     int ry = GetRand(STAGE_HEIGHT * CHA_HEIGHT);
@@ -16,6 +22,7 @@ Enemy::Enemy()
     moveVal_ = 0;
 
     forward_ = RIGHT;
+    BFS();
 }
 
 Enemy::~Enemy()
@@ -24,13 +31,24 @@ Enemy::~Enemy()
 
 void Enemy::Update()
 {
-    RandomMove();
+    //RandomMove();
     //RightHandMove();
+    RouteMove();
+    timer_ += 1;
+    if (timer_ >= 60*5) {
+        BFS();
+        timer_ = 0.0f;
+    }
 }
 
 void Enemy::Draw()
 {
+    for (auto itr : route_) {
+        DrawBox(itr.x * CHA_WIDTH, itr.y * CHA_HEIGHT, itr.x * CHA_WIDTH + CHA_WIDTH, itr.y * CHA_HEIGHT + CHA_HEIGHT,
+            GetColor(0, 205, 100), TRUE);
+    }
     DrawBox(pos_.x, pos_.y, pos_.x + CHA_WIDTH, pos_.y + CHA_HEIGHT, GetColor(80, 89, 10), TRUE);
+    DrawFormatString(0, 0, GetColor(255, 255, 255), "%d", route_.size());
 }
 
 bool Enemy::CheckHit(const Rect& me, const Rect& other)
@@ -230,7 +248,7 @@ void Enemy::CloseMove()
     }
 }
 
-void Enemy::BFSMove()
+void Enemy::BFS()
 {
     Player* player = (Player*)FindGameObject<Player>();
     if (player == nullptr)
@@ -240,25 +258,30 @@ void Enemy::BFSMove()
         return;
 
 
+    std::vector<std::vector<int>> smap;
+    std::vector<int> m;
+    for (int i = 0; i < STAGE_WIDTH; i++) {
+        m.push_back(-1);
+    }
+    for (int i = 0; i < STAGE_HEIGHT; i++) {
+        smap.push_back(m);
+    }
+    m.clear();
+    std::vector<Point> route;
+    route_.clear();
+    Point goal = { player->GetPos().x / CHA_WIDTH,player->GetPos().y / CHA_HEIGHT };
+    Point start = { pos_.x / CHA_WIDTH, pos_.y / CHA_HEIGHT };
+    queue.push(start);
     int sNum = 0;
     int qSize = queue.size();
     int qCount = 0;
-    std::vector<std::vector<int>> smap;
-    for (int y = 0; y < STAGE_HEIGHT; y++) {
-        std::vector<int> m;
-        for (int x = 0; x < STAGE_WIDTH; x++) {
-            m.push_back(-1);
-        }
-        smap.push_back(m);
-    }
-    std::vector<Point> route;
-    route.clear();
-    Point goal = { player->GetPos().x % CHA_WIDTH,player->GetPos().y % CHA_HEIGHT };
+    routeCount_ = 0;
+    moveVal_ = 100;
     while (!queue.empty()) {
         Point pos = queue.front();
         smap[pos.y][pos.x] = sNum;
         //goal
-        if (goal.x == pos.x && goal.y == pos.y) {
+        if (goal == pos) {
             break;
         }
         if (qCount % qSize == 0) {
@@ -302,15 +325,87 @@ void Enemy::BFSMove()
     }
     //route
     Point nPos = goal;
+    if (smap[nPos.y][nPos.x] < 0)return;
+    int count = 0;
+    struct ROUTE_DIR {
+        Point pos;
+        int c;
+    };
     while (true) {
         //route‚Énpos‚ð“ü‚ê‚é
         route.push_back(nPos);
+        if (nPos == start) {
+            break;
+        }
         //ã‰º¶‰E‚ÅŽ©•ª‚æ‚è1¬‚³‚¢”‚ð’T‚·
-        if()
-        //‚»‚±‚ÖˆÚ“® npos‚É‚»‚ÌÀ•W‚ð“ü‚ê‚é
-        //goal‚È‚ç‚¨‚í‚è
-        //‚È‚­‚Ä‚à‚¨‚í‚è
-        //
+        std::vector<ROUTE_DIR> r;
+        ROUTE_DIR tmp;
+        if (nPos.x - 1 > 0) {
+            tmp.c = smap[nPos.y][nPos.x - 1];
+            tmp.pos = { nPos.x - 1,nPos.y };
+            r.push_back(tmp);
+        }
+        if (nPos.x + 1 < STAGE_WIDTH) {
+            tmp.c = smap[nPos.y][nPos.x + 1];
+            tmp.pos = { nPos.x + 1,nPos.y };
+            r.push_back(tmp);
+        }
+        if (nPos.y - 1 > 0) {
+            tmp.c = smap[nPos.y - 1][nPos.x];
+            tmp.pos = { nPos.x,nPos.y - 1 };
+            r.push_back(tmp);
+        }
+        if (nPos.y + 1 < STAGE_HEIGHT) {
+            tmp.c = smap[nPos.y + 1][nPos.x];
+            tmp.pos = { nPos.x,nPos.y + 1 };
+            r.push_back(tmp);
+        }
+        for (auto itr:r) {
+            if (itr.c == smap[nPos.y][nPos.x] - 1) {
+                //‚»‚±‚ÖˆÚ“® npos‚É‚»‚ÌÀ•W‚ð“ü‚ê‚é
+                nPos = itr.pos;
+                break;
+            }
+        }
+        count++;
     }
     //route‚Ì”z—ñ”½“]
+
+    for (int i = route.size() - 1; i >= 0;i--) {
+        route_.push_back(route[i]);
+    }
+    route.clear();
+    smap.clear();
+}
+
+void Enemy::RouteMove()
+{
+    Point nDir[4] = { {0,-1},{0,1},{-1,0},{1,0} };
+    Point p;
+    p.x = pos_.x / CHA_WIDTH;
+    p.y = pos_.y / CHA_HEIGHT;
+    if (routeCount_ < route_.size() && moveVal_ >= CHA_WIDTH) {
+        Point route = route_[routeCount_];
+        moveVal_ = 0;
+        if (p.x < route.x) {
+            forward_ = DIR::RIGHT;
+        }
+        else if (p.x > route.x) {
+            forward_ = DIR::LEFT;
+        }
+        else if (p.y > route.y) {
+            forward_ = DIR::UP;
+        }
+        else if (p.y < route.y) {
+            forward_ = DIR::DOWN;
+        }
+        routeCount_++;
+    }
+    else if (routeCount_ >= route_.size()) {
+        return;
+    }
+
+    pos_.x += nDir[forward_].x;
+    pos_.y += nDir[forward_].y;
+    moveVal_ += 1;
 }
