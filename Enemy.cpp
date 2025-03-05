@@ -32,7 +32,7 @@ void Enemy::Update()
 {
     timer_ -= 1;
     if ((timer_ <=  0.0f && moveVal_ == 0) || (routeCount_ >= route_.size() && moveVal_ >= CHA_WIDTH)) {
-        BFS();
+        DS();
         timer_ = 60 * 5;
     }
     RouteMove();
