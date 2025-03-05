@@ -14,8 +14,8 @@ Enemy::Enemy()
 {
     int rx = GetRand(STAGE_WIDTH * CHA_WIDTH);
     int ry = GetRand(STAGE_HEIGHT * CHA_HEIGHT);
-    rx = (STAGE_WIDTH - 2) * CHA_HEIGHT;
-    ry = (STAGE_HEIGHT - 2) * CHA_HEIGHT;
+    rx = (STAGE_WIDTH - 28) * CHA_HEIGHT;
+    ry = (STAGE_HEIGHT - 12) * CHA_HEIGHT;
     pos_ = { rx, ry };
     dir_ = { -1,0 };
     speed_ = 1;
@@ -30,14 +30,22 @@ Enemy::~Enemy()
 
 void Enemy::Update()
 {
-    //RandomMove();
-    //RightHandMove();
-    timer_ -= 1;
+    static bool is = false;
+    
+    if (rand() % 5 == 0 &&pos_.x%CHA_WIDTH==0&&pos_.y%CHA_HEIGHT==0) {
+        is = !is;
+        moveVal_ = 0;
+    }
+    if(is)
+    RandomMove();
+    else
+    RightHandMove();
+    /*timer_ -= 1;
     if ((timer_ <=  0.0f && moveVal_ == 0) || (routeCount_ >= route_.size() && moveVal_ >= CHA_WIDTH)) {
         DS();
         timer_ = 60 * 5;
     }
-    RouteMove();
+    RouteMove();*/
 }
 
 void Enemy::Draw()
@@ -71,8 +79,9 @@ bool Enemy::CheckHit(const Rect& me, const Rect& other)
 
 void Enemy::RightHandMove()
 {
-    Point move = { speed_ * dir_.x, speed_ * dir_.y };
     Stage* stage = (Stage*)FindGameObject<Stage>();
+    Point move = { speed_ * dir_.x, speed_ * dir_.y };
+    //Stage* stage = (Stage*)FindGameObject<Stage>();
     //移動先でブロックと衝突しているか
     //右回転させたdir
     Point rDir = dir_;
@@ -120,8 +129,33 @@ void Enemy::RightHandMove()
     }
     else {
         //移動
-        pos_.x += move.x;
-        pos_.y += move.y;
+        Point op = pos_;
+        Rect eRect = { pos_.x, pos_.y,CHA_WIDTH, CHA_HEIGHT };
+        Stage* stage = (Stage*)FindGameObject<Stage>();
+        pos_ = { pos_.x + move.x, pos_.y + move.y };
+        for (auto& obj : stage->GetStageRects())
+        {
+            if (CheckHit(eRect, obj)) {
+                Rect tmpRectX = { op.x, pos_.y, CHA_WIDTH, CHA_HEIGHT };
+                Rect tmpRecty = { pos_.x, op.y, CHA_WIDTH, CHA_HEIGHT };
+                if (!CheckHit(tmpRectX, obj))
+                {
+                    pos_.x = op.x;
+                }
+                else if (!CheckHit(tmpRecty, obj))
+                {
+                    pos_.y = op.y;
+                }
+                else
+                {
+                    pos_ = op;
+                }
+                break;
+            }
+        }
+
+        //pos_.x += move.x;
+        //pos_.y += move.y;
         moveVal_ += abs(move.x) + abs(move.y);
     }
 }
@@ -165,8 +199,8 @@ void Enemy::RandomMove()
     int cy = (pos_.y / (CHA_HEIGHT)) % 2;
     if (prgssx == 0 && prgssy == 0 && cx && cy)
     {
-        //forward_ = (DIR)(GetRand(3));
-        CloseMove();
+        forward_ = (DIR)(GetRand(3));
+       // CloseMove();
     }
 }
 
