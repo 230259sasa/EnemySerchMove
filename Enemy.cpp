@@ -31,13 +31,13 @@ Enemy::~Enemy()
 void Enemy::Update()
 {
     //RandomMove();
-    //RightHandMove();
-    timer_ -= 1;
+    RightHandMove();
+    /*timer_ -= 1;
     if ((timer_ <=  0.0f && moveVal_ == 0) || (routeCount_ >= route_.size() && moveVal_ >= CHA_WIDTH)) {
         DS();
         timer_ = 60 * 5;
     }
-    RouteMove();
+    RouteMove();*/
 }
 
 void Enemy::Draw()
