@@ -18,7 +18,7 @@ namespace {
 
 
 Player::Player()
-	: pos_({ CHA_WIDTH, CHA_HEIGHT }), playerImage_(-1)
+	: pos_({ CHA_WIDTH * 5, CHA_HEIGHT * 3 }), playerImage_(-1)
 {
 }
 

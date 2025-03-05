@@ -10,7 +10,7 @@ bool operator == (Point p1, Point p2) {
 }
 
 Enemy::Enemy()
-    :pos_({ 0,0 }), isAlive_(true),timer_(0.0f)
+    :pos_({ 0,0 }), isAlive_(true),timer_(60.0f*5.0f),routeCount_(1)
 {
     int rx = GetRand(STAGE_WIDTH * CHA_WIDTH);
     int ry = GetRand(STAGE_HEIGHT * CHA_HEIGHT);
@@ -22,7 +22,6 @@ Enemy::Enemy()
     moveVal_ = 0;
 
     forward_ = RIGHT;
-    BFS();
 }
 
 Enemy::~Enemy()
@@ -33,19 +32,26 @@ void Enemy::Update()
 {
     //RandomMove();
     //RightHandMove();
-    RouteMove();
-    timer_ += 1;
-    if (timer_ >= 60*5) {
-        BFS();
-        timer_ = 0.0f;
+    timer_ -= 1;
+    if ((timer_ <=  0.0f && moveVal_ == 0) || (routeCount_ >= route_.size() && moveVal_ >= CHA_WIDTH)) {
+        DS();
+        timer_ = 60 * 5;
     }
+    RouteMove();
 }
 
 void Enemy::Draw()
 {
+    static int r = 0;
+    r++;
+    int c = r / 20;
+    int count = 0;
     for (auto itr : route_) {
+        //if (count >= c)
+       //     break;
         DrawBox(itr.x * CHA_WIDTH, itr.y * CHA_HEIGHT, itr.x * CHA_WIDTH + CHA_WIDTH, itr.y * CHA_HEIGHT + CHA_HEIGHT,
             GetColor(0, 205, 100), TRUE);
+        count++;
     }
     DrawBox(pos_.x, pos_.y, pos_.x + CHA_WIDTH, pos_.y + CHA_HEIGHT, GetColor(80, 89, 10), TRUE);
     DrawFormatString(0, 0, GetColor(255, 255, 255), "%d", route_.size());
@@ -271,11 +277,15 @@ void Enemy::BFS()
     route_.clear();
     Point goal = { player->GetPos().x / CHA_WIDTH,player->GetPos().y / CHA_HEIGHT };
     Point start = { pos_.x / CHA_WIDTH, pos_.y / CHA_HEIGHT };
+
+    std::queue<Point> queue;
+    while(!queue.empty())
+        queue.pop();
     queue.push(start);
     int sNum = 0;
     int qSize = queue.size();
     int qCount = 0;
-    routeCount_ = 0;
+    routeCount_ = 1;
     moveVal_ = 100;
     while (!queue.empty()) {
         Point pos = queue.front();
@@ -378,12 +388,138 @@ void Enemy::BFS()
     smap.clear();
 }
 
+void Enemy::DS()
+{
+    Player* player = (Player*)FindGameObject<Player>();
+    if (player == nullptr)
+        return;
+    Stage* stage = (Stage*)FindGameObject<Stage>();
+    if (stage == nullptr)
+        return;
+
+    using Pair = std::pair<int, std::pair<int, int>>;
+    std::priority_queue<Pair, std::vector<Pair>
+        , std::greater<Pair>> queue;
+    std::vector<Point> route;
+    route_.clear();
+    routeCount_ = 0;
+    moveVal_ = 100;
+    Point goal = { player->GetPos().x / CHA_WIDTH,player->GetPos().y / CHA_HEIGHT };
+    Point start = { pos_.x / CHA_WIDTH, pos_.y / CHA_HEIGHT };
+    Pair pair;
+    pair.first = 0;
+    pair.second.first = start.x;
+    pair.second.second = start.y;
+    queue.push(pair);
+    struct Edge {
+        Point to;
+        int cost;
+    };
+    enum CMapData {
+        C_WALL=-1
+    };
+    std::vector<std::vector<Edge>> dMap;
+    std::vector<std::vector<int>> cMap;
+    for (int y = 0; y < STAGE_HEIGHT; y++) {
+        std::vector<int> m;
+        std::vector<Edge> ed;
+        for (int x = 0; x < STAGE_WIDTH; x++) {
+            if (stage->GetStageData(x, y) == STAGE_OBJ::WALL) {
+                m.push_back((int)C_WALL);
+            }
+            else {
+                m.push_back(1);
+            }
+            Edge e;
+            e.to = { 0, 0 };
+            e.cost = 1000000;
+            ed.push_back(e);
+        }
+        cMap.push_back(m);
+        dMap.push_back(ed);
+    }
+    cMap[start.y][start.x] = 0;
+
+    while (!queue.empty()) {
+        int cost = queue.top().first;
+        Point pos = { queue.top().second.first,
+            queue.top().second.second };
+        queue.pop();
+        route.push_back(pos);
+
+        Edge edge[4];
+        for (int i = 0; i < 4; i++) {
+            edge[i].cost = -1;
+            edge[i].to = Point{ -1, -1 };
+        }
+
+        if (pos.x - 1 >= 0) {
+            Point p{ pos.x - 1, pos.y };
+            if (cMap[p.y][p.x] >= 0) {
+                edge[0].cost = cost + cMap[p.y][p.x];
+                edge[0].to = p;
+            }
+        }
+        if (pos.x + 1 < cMap[0].size()) {
+            Point p{ pos.x + 1, pos.y };
+            if (cMap[p.y][p.x] >= 0) {
+                edge[1].cost = cost + cMap[p.y][p.x];
+                edge[1].to = p;
+            }
+        }
+        if (pos.y - 1 >= 0) {
+            Point p{ pos.x, pos.y - 1 };
+            if (cMap[p.y][p.x] >= 0) {
+                edge[2].cost = cost + cMap[p.y][p.x];
+                edge[2].to = p;
+            }
+        }
+        if (pos.y + 1 < cMap.size()) {
+            Point p{pos.x, pos.y + 1};
+            if (cMap[p.y][p.x] >= 0) {
+                edge[3].cost = cost + cMap[p.y][p.x];
+                edge[3].to = p;
+            }
+        }
+
+        for (int i = 0; i < 4; i++) {
+            if (edge[i].cost < 0)
+                continue;
+            if (dMap[edge[i].to.y][edge[i].to.x].cost < edge[i].cost)
+                continue;
+            Pair p;
+            p.first = edge[i].cost;
+            p.second.first = edge[i].to.x;
+            p.second.second = edge[i].to.y;
+            dMap[edge[i].to.y][edge[i].to.x].cost = edge[i].cost;
+            dMap[edge[i].to.y][edge[i].to.x].to = pos;
+            queue.push(p);
+        }
+    }
+
+    Point gpos = dMap[goal.y][goal.x].to;
+    Point pastPos{ -1, -1 };
+    std::vector<Point> r;
+    r.push_back(goal);
+    while (true) {
+        if (start == gpos || pastPos == gpos)
+            break;
+        r.push_back(gpos);
+        pastPos = gpos;
+        gpos = dMap[gpos.y][gpos.x].to;
+    }
+    for (int i = r.size() - 1; i >= 0; i--) {
+        route_.push_back(r[i]);
+    }
+}
+
 void Enemy::RouteMove()
 {
     Point nDir[4] = { {0,-1},{0,1},{-1,0},{1,0} };
     Point p;
     p.x = pos_.x / CHA_WIDTH;
     p.y = pos_.y / CHA_HEIGHT;
+    
     if (routeCount_ < route_.size() && moveVal_ >= CHA_WIDTH) {
         Point route = route_[routeCount_];
         moveVal_ = 0;
@@ -401,11 +537,13 @@ void Enemy::RouteMove()
         }
         routeCount_++;
     }
-    else if (routeCount_ >= route_.size()) {
+    else if (routeCount_ > route_.size() || moveVal_ >= CHA_WIDTH) {
         return;
     }
+    else {
+        pos_.x += nDir[forward_].x;
+        pos_.y += nDir[forward_].y;
+        moveVal_ += 1;
+    }
 
-    pos_.x += nDir[forward_].x;
-    pos_.y += nDir[forward_].y;
-    moveVal_ += 1;
 }

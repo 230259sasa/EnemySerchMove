@@ -7,8 +7,8 @@
 PlayScene::PlayScene()
 {
 	new Stage();
-	new Player();
 	new Enemy();
+	new Player();
 }
 
 PlayScene::~PlayScene()
