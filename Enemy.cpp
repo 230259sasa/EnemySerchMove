@@ -10,12 +10,12 @@ bool operator == (Point p1, Point p2) {
 }
 
 Enemy::Enemy()
-    :pos_({ 0,0 }), isAlive_(true),timer_(60.0f*5.0f),routeCount_(1)
+    :pos_({ 0,0 }), isAlive_(true),timer_(0),routeCount_(1)
 {
     int rx = GetRand(STAGE_WIDTH * CHA_WIDTH);
     int ry = GetRand(STAGE_HEIGHT * CHA_HEIGHT);
-    rx = (STAGE_WIDTH - 28) * CHA_HEIGHT;
-    ry = (STAGE_HEIGHT - 12) * CHA_HEIGHT;
+    rx = (STAGE_WIDTH - 2) * CHA_HEIGHT;
+    ry = (STAGE_HEIGHT - 2) * CHA_HEIGHT;
     pos_ = { rx, ry };
     dir_ = { -1,0 };
     speed_ = 1;
@@ -30,22 +30,12 @@ Enemy::~Enemy()
 
 void Enemy::Update()
 {
-    static bool is = false;
-    
-    if (rand() % 5 == 0 &&pos_.x%CHA_WIDTH==0&&pos_.y%CHA_HEIGHT==0) {
-        is = !is;
-        moveVal_ = 0;
-    }
-    if(is)
-    RandomMove();
-    else
-    RightHandMove();
-    /*timer_ -= 1;
+    timer_ -= 1;
     if ((timer_ <=  0.0f && moveVal_ == 0) || (routeCount_ >= route_.size() && moveVal_ >= CHA_WIDTH)) {
-        DS();
+        BFS();
         timer_ = 60 * 5;
     }
-    RouteMove();*/
+    RouteMove();
 }
 
 void Enemy::Draw()
